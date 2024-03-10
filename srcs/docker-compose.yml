@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+  mariadb:
+    container_name: mariadb
+    networks:
+      - my_network
+    build:
+      context: requirements/mariadb
+      dockerfile: Dockerfile
+    image: mariadb:v1
+    init: true
+    env_file: .env
+    volumes:
+      - mariadb-vol:/var/lib/mysql
+    restart: on-failure
+    expose:
+      - "3306"
+  wordpress:
+    container_name: wordpress
+    networks:
+      - my_network
+    build: 
+      context: requirements/wordpress
+      dockerfile: Dockerfile
+    image: wordpress:v1
+    init: true
+    env_file: .env
+    volumes:
+      - wordpress-vol:/var/www/html
+    depends_on:
+      - mariadb
+    restart: on-failure
+    expose:
+      - "9000"
+  nginx:
+    container_name: nginx
+    networks:
+      - my_network
+    build:
+      context: requirements/nginx
+      dockerfile: Dockerfile
+    image: nginx:v1
+    init: true
+    env_file: .env
+    volumes:
+      - wordpress-vol:/var/www/html
+    depends_on:
+      - wordpress
+    restart: on-failure
+    ports:
+      - "443:443"
+
+networks:
+  my_network:
+    driver: bridge
+
+volumes:
+  mariadb-vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      # device: /Users/${LOGIN}/data/mariadb
+      device: /home/${LOGIN}/data/mariadb
+  wordpress-vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      # device: /Users/${LOGIN}/data/wordpress
+      device: /home/${LOGIN}/data/wordpress
